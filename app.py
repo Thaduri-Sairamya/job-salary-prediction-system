@@ -1,33 +1,380 @@
+
 import streamlit as st
+import pandas as pd
 import joblib
 from pathlib import Path
 
+
+# ============================================================
+# PAGE CONFIGURATION
+# ============================================================
+
 st.set_page_config(
-    page_title="Job Salary Prediction",
-    page_icon="💼"
+    page_title="AI Job Salary Prediction",
+    page_icon="💰",
+    layout="wide"
 )
 
-st.title("💼 Job Salary Prediction")
 
-st.write("Application started successfully.")
+# ============================================================
+# LOAD MODEL
+# ============================================================
 
-model_path = Path(__file__).parent / "ai_job_salary_model_compressed.pkl"
+@st.cache_resource
+def load_model():
 
-if not model_path.exists():
-    st.error("❌ Model file was not found.")
-else:
-    st.success("✅ Model file found.")
+    model_path = Path(__file__).parent / "ai_job_salary_model_compressed.pkl"
 
-    st.write("Loading model...")
+    if not model_path.exists():
+        raise FileNotFoundError(
+            f"Model file not found: {model_path}"
+        )
+
+    return joblib.load(model_path)
+
+
+# Load the model
+try:
+    model = load_model()
+
+except Exception as e:
+    st.error("❌ Failed to load the salary prediction model.")
+    st.exception(e)
+    st.stop()
+
+
+# ============================================================
+# TITLE
+# ============================================================
+
+st.title("💰 AI Job Salary Prediction")
+
+st.write(
+    "Enter the job details below to predict the expected salary."
+)
+
+st.divider()
+
+
+# ============================================================
+# JOB INFORMATION
+# ============================================================
+
+st.header("📋 Job Information")
+
+col1, col2 = st.columns(2)
+
+
+with col1:
+
+    job_id = st.text_input(
+        "Job ID",
+        value="AI00001"
+    )
+
+    job_title = st.text_input(
+        "Job Title",
+        value="Data Scientist"
+    )
+
+    salary_currency = st.selectbox(
+        "Salary Currency",
+        ["USD", "EUR", "GBP"]
+    )
+
+    experience_level = st.selectbox(
+        "Experience Level",
+        ["EN", "MI", "SE", "EX"]
+    )
+
+    employment_type = st.selectbox(
+        "Employment Type",
+        ["FT", "PT", "CT", "FL"]
+    )
+
+
+with col2:
+
+    company_location = st.text_input(
+        "Company Location",
+        value="United States"
+    )
+
+    company_size = st.selectbox(
+        "Company Size",
+        ["S", "M", "L"]
+    )
+
+    employee_residence = st.text_input(
+        "Employee Residence",
+        value="United States"
+    )
+
+    education_required = st.selectbox(
+        "Education Required",
+        [
+            "Associate",
+            "Bachelor",
+            "Master",
+            "PhD"
+        ]
+    )
+
+    industry = st.text_input(
+        "Industry",
+        value="Technology"
+    )
+
+
+# ============================================================
+# NUMERICAL FEATURES
+# ============================================================
+
+st.header("📊 Job Details")
+
+col1, col2, col3 = st.columns(3)
+
+
+with col1:
+
+    years_experience = st.number_input(
+        "Years of Experience",
+        min_value=0,
+        max_value=50,
+        value=2
+    )
+
+    remote_ratio = st.selectbox(
+        "Remote Ratio",
+        [0, 50, 100]
+    )
+
+
+with col2:
+
+    job_description_length = st.number_input(
+        "Job Description Length",
+        min_value=0,
+        max_value=10000,
+        value=1500
+    )
+
+    benefits_score = st.number_input(
+        "Benefits Score",
+        min_value=0.0,
+        max_value=10.0,
+        value=7.0,
+        step=0.1
+    )
+
+
+with col3:
+
+    posting_year = st.number_input(
+        "Posting Year",
+        min_value=2020,
+        max_value=2030,
+        value=2025
+    )
+
+    posting_month = st.number_input(
+        "Posting Month",
+        min_value=1,
+        max_value=12,
+        value=6
+    )
+
+
+# ============================================================
+# POSTING INFORMATION
+# ============================================================
+
+st.header("📅 Posting Information")
+
+col1, col2, col3 = st.columns(3)
+
+
+with col1:
+
+    new_posting_day = st.number_input(
+        "Posting Day",
+        min_value=1,
+        max_value=31,
+        value=15
+    )
+
+
+with col2:
+
+    posting_dayofweek = st.selectbox(
+        "Posting Day of Week",
+        [0, 1, 2, 3, 4, 5, 6],
+        format_func=lambda x: [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday"
+        ][x]
+    )
+
+
+with col3:
+
+    application_window = st.number_input(
+        "Application Window (Days)",
+        min_value=1,
+        max_value=200,
+        value=30
+    )
+
+
+# ============================================================
+# OTHER FEATURES
+# ============================================================
+
+st.header("🛠️ Skills & Company")
+
+col1, col2 = st.columns(2)
+
+
+with col1:
+
+    required_skills = st.text_input(
+        "Required Skills",
+        value="Python, SQL, Machine Learning"
+    )
+
+
+with col2:
+
+    company_name = st.text_input(
+        "Company Name",
+        value="TechCorp"
+    )
+
+
+# ============================================================
+# PREDICTION
+# ============================================================
+
+st.divider()
+
+if st.button(
+    "🔮 Predict Salary",
+    use_container_width=True
+):
+
+    # ========================================================
+    # CREATE INPUT DATAFRAME
+    # ========================================================
+
+    input_data = pd.DataFrame({
+
+        "job_id": [job_id],
+
+        "job_title": [job_title],
+
+        "salary_currency": [salary_currency],
+
+        "experience_level": [experience_level],
+
+        "employment_type": [employment_type],
+
+        "company_location": [company_location],
+
+        "company_size": [company_size],
+
+        "employee_residence": [employee_residence],
+
+        "remote_ratio": [remote_ratio],
+
+        "required_skills": [required_skills],
+
+        "education_required": [education_required],
+
+        "years_experience": [years_experience],
+
+        "industry": [industry],
+
+        "job_description_length": [
+            job_description_length
+        ],
+
+        "benefits_score": [
+            benefits_score
+        ],
+
+        "company_name": [company_name],
+
+        "posting_year": [
+            posting_year
+        ],
+
+        "posting_month": [
+            posting_month
+        ],
+
+        "new_posting_day": [
+            new_posting_day
+        ],
+
+        "posting_dayofweek": [
+            posting_dayofweek
+        ],
+
+        "application_window": [
+            application_window
+        ]
+    })
+
+
+    # ========================================================
+    # MAKE PREDICTION
+    # ========================================================
 
     try:
-        model = joblib.load(model_path)
 
-        st.success("✅ Model loaded successfully!")
+        prediction = model.predict(input_data)
 
-        st.write("Your salary prediction model is ready.")
+        predicted_salary = prediction[0]
+
+
+        # ====================================================
+        # DISPLAY RESULT
+        # ====================================================
+
+        st.success(
+            "✅ Salary prediction completed successfully!"
+        )
+
+        st.subheader("💰 Predicted Salary")
+
+        st.metric(
+            "Expected Salary",
+            f"${predicted_salary:,.2f}"
+        )
+
+
+        # ====================================================
+        # DISPLAY INPUT DATA
+        # ====================================================
+
+        with st.expander("📋 View Input Details"):
+
+            st.dataframe(
+                input_data,
+                use_container_width=True
+            )
+
 
     except Exception as e:
-        st.error("❌ Model loading failed.")
+
+        st.error(
+            "❌ Prediction failed."
+        )
+
         st.exception(e)
 
